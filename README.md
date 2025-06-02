@@ -2,7 +2,9 @@
 
 A beautiful CLI tool for calculating damage for Dumnorix the Barbarian in D&D 2024. Features interactive prompts, colorful output, and support for all barbarian abilities including Brutal Strike, Savage Attacks, and Heroic Inspiration.
 
-![Demo](https://img.shields.io/badge/D%26D-2024-red) ![Node](https://img.shields.io/badge/Node.js-18%2B-green) ![License](https://img.shields.io/badge/license-MIT-blue)
+## ⚔️ See It In Action
+
+![Critical Hit Demo](./damage-calc.gif)
 
 ## ✨ Features
 

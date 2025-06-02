@@ -2,6 +2,7 @@
 
 import { Command } from 'commander';
 import chalk from 'chalk';
+import chalkAnimation from 'chalk-animation';
 import inquirer from 'inquirer';
 import readline from 'readline';
 
@@ -28,6 +29,130 @@ const DAMAGE_DICE = {
 
 const BRUTAL_STRIKE_DIE = 10;
 const GREAT_WEAPON_FIGHTING = true;
+
+// =============================================================================
+// ANIMATION HELPERS
+// =============================================================================
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function animateText(text, animationType = 'rainbow', duration = 2000) {
+  const animation = chalkAnimation[animationType](text);
+  await sleep(duration);
+  animation.stop();
+}
+
+async function showCharacterIntro() {
+  console.clear();
+  
+  // Animated character name
+  const nameAnimation = chalkAnimation.rainbow(`\n⚔️  ${CHARACTER_NAME} THE DESTROYER ⚔️`);
+  await sleep(3000);
+  nameAnimation.stop();
+  
+  // Pulsing weapon info
+  const weaponAnimation = chalkAnimation.pulse(`\nWielding the mighty ${WEAPON_NAME} of legend!`);
+  await sleep(2500);
+  weaponAnimation.stop();
+  
+  console.log(chalk.yellow('\nReady for combat! 💀'));
+}
+
+async function animateCriticalHit() {
+  console.log('\n💥 CRITICAL HIT! 💥');
+  
+  // ASCII Fireworks effect
+  const fireworks = [
+    '      ✦       ✧       ✦      ',
+    '   ✧     ✦       ✦     ✧   ',
+    '✦    ✧  💥 BOOM! 💥  ✧    ✦',
+    '   ✧     ✦       ✦     ✧   ',
+    '      ✦       ✧       ✦      '
+  ];
+  
+  // Show fireworks sequence with animation
+  console.log('');
+  const fireworksAnimation = chalkAnimation.rainbow(fireworks.join('\n'));
+  await sleep(2000);
+  fireworksAnimation.stop();
+  
+  // Flash effect with dramatic messages
+  const critMessages = [
+    chalk.red.bold('⚡ DEVASTATING BLOW! ⚡'),
+    chalk.yellow.bold('🔥 MAXIMUM CARNAGE! 🔥'),
+    chalk.red.bold('💀 ENEMY ANNIHILATED! 💀'),
+    chalk.yellow.bold('⭐ LEGENDARY STRIKE! ⭐'),
+    chalk.red.bold('🗡️ PERFECT TECHNIQUE! 🗡️')
+  ];
+  
+  for (let i = 0; i < 6; i++) {
+    process.stdout.write('\r' + ' '.repeat(60) + '\r');
+    const message = critMessages[i % critMessages.length];
+    
+    if (i % 2 === 0) {
+      // Alternate between neon and pulse animations
+      const flashAnimation = chalkAnimation.neon(message);
+      await sleep(400);
+      flashAnimation.stop();
+    } else {
+      const flashAnimation = chalkAnimation.pulse(message);
+      await sleep(400);
+      flashAnimation.stop();
+    }
+  }
+  
+  // Final explosion ASCII with animation
+  const explosion = [
+    '',
+    '         ✦ ✧ ✦ ✧ ✦         ',
+    '      ✧ ✦ 💥 CRIT! 💥 ✦ ✧      ',
+    '   ✦ ✧ ⚡ CONFIRMED! ⚡ ✧ ✦   ',
+    '      ✧ ✦ 💥 EPIC! 💥 ✦ ✧      ',
+    '         ✦ ✧ ✦ ✧ ✦         ',
+    ''
+  ];
+  
+  process.stdout.write('\r' + ' '.repeat(60) + '\r');
+  
+  // Animate the explosion
+  const explosionAnimation = chalkAnimation.radar(explosion.join('\n'));
+  await sleep(2500);
+  explosionAnimation.stop();
+  
+  // Final karaoke celebration
+  const celebrationAnimation = chalkAnimation.karaoke('🎆 CRITICAL SUCCESS CONFIRMED! 🎆');
+  await sleep(2000);
+  celebrationAnimation.stop();
+  
+  console.log('');
+}
+
+async function animateDamageResult(damage, isCritical = false) {
+  if (isCritical) {
+    // Pulse the damage number for crits
+    const damageAnimation = chalkAnimation.pulse(`DAMAGE: ${damage}`);
+    await sleep(2000);
+    damageAnimation.stop();
+  } else if (damage >= 20) {
+    // Neon for high damage
+    const damageAnimation = chalkAnimation.neon(`DAMAGE: ${damage}`);
+    await sleep(1500);
+    damageAnimation.stop();
+  } else {
+    // Simple glow for normal hits
+    const damageAnimation = chalkAnimation.glitch(`DAMAGE: ${damage}`);
+    await sleep(1000);
+    damageAnimation.stop();
+  }
+}
+
+async function animateHeroicInspiration() {
+  const heroicAnimation = chalkAnimation.radar('✨ HEROIC INSPIRATION ACTIVATED! ✨');
+  await sleep(2000);
+  heroicAnimation.stop();
+}
 
 // =============================================================================
 // CORE FUNCTIONS
@@ -161,6 +286,8 @@ async function calculateDamage(args = {}) {
         const useHeroic = await askHeroicInspiration(lowestRoll.value, lowestRoll.source);
         
         if (useHeroic) {
+          await animateHeroicInspiration();
+          
           const newRoll = rollDie(lowestRoll.die, false);
           console.log(`Heroic Inspiration: ${lowestRoll.value} -> ${newRoll}`);
           console.log(chalk.gray('(Heroic Inspiration used - no longer available this session)\n'));
@@ -237,72 +364,27 @@ async function calculateDamage(args = {}) {
   };
 }
 
-function printResult(result, args) {
+async function printResult(result, args) {
   const flags = Object.entries(args)
     .filter(([key, value]) => value === true)
     .map(([key]) => `--${key}`)
     .join(' ');
   
-  // Special animation for critical hits
+  // Animated critical hit sequence
   if (args.critical) {
-    console.log('\n💥 CRITICAL HIT! 💥');
-    
-    // ASCII Fireworks effect
-    const fireworks = [
-      '      ✦       ✧       ✦      ',
-      '   ✧     ✦       ✦     ✧   ',
-      '✦    ✧  💥 BOOM! 💥  ✧    ✦',
-      '   ✧     ✦       ✦     ✧   ',
-      '      ✦       ✧       ✦      '
-    ];
-    
-    // Show fireworks sequence
-    console.log('');
-    fireworks.forEach(line => {
-      console.log(chalk.yellow(line));
-      const delay = Date.now();
-      while (Date.now() - delay < 150) {}
-    });
-    
-    // Flash effect with more dramatic messages
-    const critMessages = [
-      chalk.red.bold('⚡ DEVASTATING BLOW! ⚡'),
-      chalk.yellow.bold('🔥 MAXIMUM CARNAGE! 🔥'),
-      chalk.red.bold('💀 ENEMY ANNIHILATED! 💀'),
-      chalk.yellow.bold('⭐ LEGENDARY STRIKE! ⭐')
-    ];
-    
-    for (let i = 0; i < 4; i++) {
-      process.stdout.write('\r' + ' '.repeat(60) + '\r');
-      process.stdout.write(critMessages[i % critMessages.length]);
-      const flashStart = Date.now();
-      while (Date.now() - flashStart < 250) {}
-    }
-    
-    // Final explosion ASCII
-    const explosion = [
-      '',
-      '         ✦ ✧ ✦ ✧ ✦         ',
-      '      ✧ ✦ 💥 CRIT! 💥 ✦ ✧      ',
-      '   ✦ ✧ ⚡ CONFIRMED! ⚡ ✧ ✦   ',
-      '      ✧ ✦ 💥 EPIC! 💥 ✦ ✧      ',
-      '         ✦ ✧ ✦ ✧ ✦         ',
-      ''
-    ];
-    
-    process.stdout.write('\r' + ' '.repeat(60) + '\r');
-    explosion.forEach(line => console.log(chalk.red.bold(line)));
-    
+    await animateCriticalHit();
     console.log(chalk.red('═'.repeat(50)));
   }
   
   console.log(`\n⚔️  ${CHARACTER_NAME}'s Attack Result ${flags ? `(${flags})` : ''}:`);
   
-  // Extra dramatic display for crits
+  // Animated damage display
   if (args.critical) {
     console.log(`💥💥 CRITICAL WEAPON DAMAGE: ${chalk.red.bold(result.weaponTotal)} piercing 💥💥`);
+    await animateDamageResult(result.weaponTotal, true);
   } else {
     console.log(`💥 Weapon Damage: ${chalk.red.bold(result.weaponTotal)} piercing`);
+    await animateDamageResult(result.weaponTotal, false);
   }
   
   if (result.additionalDamage.length > 0) {
@@ -311,9 +393,15 @@ function printResult(result, args) {
     });
   }
   
-  // Special message for high damage
-  if (result.weaponTotal >= 25) {
-    console.log('🎉 EPIC DAMAGE! The battlefield shakes! 🎉');
+  // Animated celebration for high damage
+  if (result.weaponTotal >= 30) {
+    const epicAnimation = chalkAnimation.rainbow('🎉 LEGENDARY DAMAGE! The gods themselves take notice! 🎉');
+    await sleep(3000);
+    epicAnimation.stop();
+  } else if (result.weaponTotal >= 25) {
+    const greatAnimation = chalkAnimation.pulse('🎉 EPIC DAMAGE! The battlefield shakes! 🎉');
+    await sleep(2000);
+    greatAnimation.stop();
   } else if (result.weaponTotal >= 20) {
     console.log('⚡ Solid hit! Your enemy staggers! ⚡');
   }
@@ -328,9 +416,10 @@ function printResult(result, args) {
 }
 
 async function interactiveMode() {
-  // Show greeting once at startup
-  console.log(chalk.yellow.bold(`\n⚔️  Hello ${CHARACTER_NAME}!`));
-  console.log('Ready for combat. Select your attack modifiers:\n');
+  // Show animated intro
+  await showCharacterIntro();
+  
+  console.log('\nSelect your attack modifiers:\n');
   
   let firstAttack = true;
   
@@ -339,15 +428,24 @@ async function interactiveMode() {
       // Don't show extra spacing on first attack
       if (!firstAttack) {
         console.log('\n' + '─'.repeat(40));
-        console.log('Next attack:');
+        
+        // Animated "next attack" message
+        const nextAttackAnimation = chalkAnimation.glitch('⚔️ NEXT ATTACK ⚔️');
+        await sleep(1000);
+        nextAttackAnimation.stop();
       }
       firstAttack = false;
       
-      // Show current status
-      const heroicStatus = heroicInspirationAvailable 
-        ? chalk.green('✨ Available') 
-        : chalk.gray('✨ Used');
-      console.log(`Heroic Inspiration: ${heroicStatus}\n`);
+      // Show current status with animation
+      if (heroicInspirationAvailable) {
+        const heroicAnimation = chalkAnimation.pulse('✨ Heroic Inspiration: Available');
+        await sleep(1000);
+        heroicAnimation.stop();
+      } else {
+        console.log(chalk.gray('✨ Heroic Inspiration: Used'));
+      }
+      
+      console.log('');
       
       const answers = await inquirer.prompt([
         {
@@ -368,8 +466,13 @@ async function interactiveMode() {
         savage: answers.modifiers.includes('savage')
       };
       
+      // Show rolling animation
+      const rollingAnimation = chalkAnimation.radar('🎲 Rolling dice... 🎲');
+      await sleep(1500);
+      rollingAnimation.stop();
+      
       const result = await calculateDamage(options);
-      printResult(result, options);
+      await printResult(result, options);
       
       const { again } = await inquirer.prompt([
         {
@@ -381,12 +484,17 @@ async function interactiveMode() {
       ]);
       
       if (!again) {
-        console.log(chalk.yellow.bold('\n⚔️  Farewell, ' + CHARACTER_NAME + '! May your blade stay sharp! ⚔️'));
+        // Animated farewell
+        const farewellAnimation = chalkAnimation.rainbow(`⚔️  Farewell, ${CHARACTER_NAME}! May your blade stay sharp! ⚔️`);
+        await sleep(3000);
+        farewellAnimation.stop();
         break;
       }
     }
   } catch (error) {
-    console.log(chalk.yellow.bold('\n⚔️  Until next time, ' + CHARACTER_NAME + '! ⚔️'));
+    const exitAnimation = chalkAnimation.rainbow(`⚔️  Until next time, ${CHARACTER_NAME}! ⚔️`);
+    await sleep(2000);
+    exitAnimation.stop();
   }
 }
 
@@ -408,7 +516,7 @@ program
   .option('-s, --savage', 'Use Savage Attacks')
   .action(async (options) => {
     const result = await calculateDamage(options);
-    printResult(result, options);
+    await printResult(result, options);
   });
 
 program
