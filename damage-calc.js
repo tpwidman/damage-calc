@@ -3,6 +3,7 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import inquirer from 'inquirer';
+import readline from 'readline';
 
 // =============================================================================
 // CONFIG BLOCK - Modify this section for your character
@@ -11,6 +12,7 @@ import inquirer from 'inquirer';
 const CHARACTER_NAME = "Dumnorix";
 const WEAPON_DIE = 10;
 const WEAPON_NAME = "pike";
+const HEROIC_INSPIRATION_AVAILABLE = true; // Set to false when used up
 
 const DAMAGE_BONUSES = {
   strength: 4,
@@ -38,72 +40,37 @@ function rollDie(sides, rerollLow = false) {
   return roll;
 }
 
-function applyHeroicInspiration(rolls) {
-  if (rolls.length === 0) {
-    return { updatedRolls: rolls, heroicUsed: null };
-  }
-
-  let lowestIndex = 0;
-  let lowestValue = rolls[0].value;
-  
-  for (let i = 1; i < rolls.length; i++) {
-    if (rolls[i].value < lowestValue) {
-      lowestValue = rolls[i].value;
-      lowestIndex = i;
-    }
-  }
-
-  const targetRoll = rolls[lowestIndex];
-  const newRoll = rollDie(targetRoll.die, false);
-  
-  const updatedRolls = [...rolls];
-  updatedRolls[lowestIndex] = { ...targetRoll, value: newRoll };
-  
-  return {
-    updatedRolls,
-    heroicUsed: {
-      originalRoll: targetRoll.value,
-      newRoll,
-      source: targetRoll.source
-    }
-  };
+// Readline-based prompt for better Git Bash compatibility
+function askHeroicInspiration(roll, source) {
+  return new Promise((resolve) => {
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout
+    });
+    
+    rl.question(`Use Heroic Inspiration to reroll the ${roll}? (Y/n): `, (answer) => {
+      rl.close();
+      const useHeroic = answer.toLowerCase() !== 'n' && answer.toLowerCase() !== 'no';
+      resolve(useHeroic);
+    });
+  });
 }
 
-function rollWeaponDamage(isCritical, useSavage, useHeroic) {
+function rollWeaponDamage(isCritical, useSavage) {
   const diceRolled = [];
   const explanations = [];
+  const allRolls = []; // Track all individual rolls for heroic inspiration
   let weaponDamage = 0;
-  let heroicUsed = null;
 
   if (isCritical) {
-    let die1 = rollDie(WEAPON_DIE, GREAT_WEAPON_FIGHTING);
-    let die2 = rollDie(WEAPON_DIE, GREAT_WEAPON_FIGHTING);
-    
-    if (useHeroic) {
-      const rolls = [
-        { value: die1, die: WEAPON_DIE, source: `${WEAPON_NAME} crit die 1` },
-        { value: die2, die: WEAPON_DIE, source: `${WEAPON_NAME} crit die 2` }
-      ];
-      const heroicResult = applyHeroicInspiration(rolls);
-      die1 = heroicResult.updatedRolls[0].value;
-      die2 = heroicResult.updatedRolls[1].value;
-      heroicUsed = heroicResult.heroicUsed;
-    }
+    const die1 = rollDie(WEAPON_DIE, GREAT_WEAPON_FIGHTING);
+    const die2 = rollDie(WEAPON_DIE, GREAT_WEAPON_FIGHTING);
+    allRolls.push({ value: die1, die: WEAPON_DIE, source: `${WEAPON_NAME} crit die 1` });
+    allRolls.push({ value: die2, die: WEAPON_DIE, source: `${WEAPON_NAME} crit die 2` });
     
     if (useSavage) {
-      let savageDie1 = rollDie(WEAPON_DIE, GREAT_WEAPON_FIGHTING);
-      let savageDie2 = rollDie(WEAPON_DIE, GREAT_WEAPON_FIGHTING);
-      
-      if (useHeroic && !heroicUsed) {
-        const savageRolls = [
-          { value: savageDie1, die: WEAPON_DIE, source: `${WEAPON_NAME} savage die 1` },
-          { value: savageDie2, die: WEAPON_DIE, source: `${WEAPON_NAME} savage die 2` }
-        ];
-        const heroicResult = applyHeroicInspiration(savageRolls);
-        savageDie1 = heroicResult.updatedRolls[0].value;
-        savageDie2 = heroicResult.updatedRolls[1].value;
-        heroicUsed = heroicResult.heroicUsed;
-      }
+      const savageDie1 = rollDie(WEAPON_DIE, GREAT_WEAPON_FIGHTING);
+      const savageDie2 = rollDie(WEAPON_DIE, GREAT_WEAPON_FIGHTING);
       
       const originalTotal = die1 + die2;
       const savageTotal = savageDie1 + savageDie2;
@@ -112,6 +79,9 @@ function rollWeaponDamage(isCritical, useSavage, useHeroic) {
         weaponDamage = savageTotal;
         diceRolled.push(`d${WEAPON_DIE}(${savageDie1})`, `d${WEAPON_DIE}(${savageDie2})`);
         explanations.push(`2d${WEAPON_DIE} ${WEAPON_NAME} critical + Savage Attacks (${savageDie1}+${savageDie2}=${savageTotal} > ${die1}+${die2}=${originalTotal})`);
+        // Update allRolls to reflect what we're actually using
+        allRolls[0] = { value: savageDie1, die: WEAPON_DIE, source: `${WEAPON_NAME} savage die 1` };
+        allRolls[1] = { value: savageDie2, die: WEAPON_DIE, source: `${WEAPON_NAME} savage die 2` };
       } else {
         weaponDamage = originalTotal;
         diceRolled.push(`d${WEAPON_DIE}(${die1})`, `d${WEAPON_DIE}(${die2})`);
@@ -123,87 +93,105 @@ function rollWeaponDamage(isCritical, useSavage, useHeroic) {
       explanations.push(`2d${WEAPON_DIE} ${WEAPON_NAME} critical`);
     }
   } else {
-    let die = rollDie(WEAPON_DIE, GREAT_WEAPON_FIGHTING);
+    const die = rollDie(WEAPON_DIE, GREAT_WEAPON_FIGHTING);
+    allRolls.push({ value: die, die: WEAPON_DIE, source: `${WEAPON_NAME} damage` });
     
     if (useSavage) {
-      let savageDie = rollDie(WEAPON_DIE, GREAT_WEAPON_FIGHTING);
-      
-      if (useHeroic) {
-        const rolls = [
-          { value: die, die: WEAPON_DIE, source: `${WEAPON_NAME} damage` },
-          { value: savageDie, die: WEAPON_DIE, source: `${WEAPON_NAME} savage` }
-        ];
-        const heroicResult = applyHeroicInspiration(rolls);
-        die = heroicResult.updatedRolls[0].value;
-        savageDie = heroicResult.updatedRolls[1].value;
-        heroicUsed = heroicResult.heroicUsed;
-      }
+      const savageDie = rollDie(WEAPON_DIE, GREAT_WEAPON_FIGHTING);
       
       if (savageDie > die) {
         weaponDamage = savageDie;
         diceRolled.push(`d${WEAPON_DIE}(${savageDie})`);
         explanations.push(`1d${WEAPON_DIE} ${WEAPON_NAME} + Savage Attacks (${savageDie} > ${die})`);
+        allRolls[0] = { value: savageDie, die: WEAPON_DIE, source: `${WEAPON_NAME} savage` };
       } else {
         weaponDamage = die;
         diceRolled.push(`d${WEAPON_DIE}(${die})`);
         explanations.push(`1d${WEAPON_DIE} ${WEAPON_NAME} + Savage Attacks didn't help (${savageDie} ≤ ${die})`);
       }
     } else {
-      if (useHeroic) {
-        const originalDie = die;
-        die = rollDie(WEAPON_DIE, false);
-        heroicUsed = {
-          originalRoll: originalDie,
-          newRoll: die,
-          source: `${WEAPON_NAME} damage`
-        };
-      }
-      
       weaponDamage = die;
       diceRolled.push(`d${WEAPON_DIE}(${die})`);
       explanations.push(`1d${WEAPON_DIE} ${WEAPON_NAME} damage`);
     }
   }
 
-  return { damage: weaponDamage, diceRolled, explanations, heroicUsed };
+  return { damage: weaponDamage, diceRolled, explanations, allRolls };
 }
 
-function calculateDamage(args = {}) {
-  const { brutal = false, critical = false, savage = false, heroic = false } = args;
+async function calculateDamage(args = {}) {
+  const { brutal = false, critical = false, savage = false } = args;
   
   let weaponDamage = 0;
   const additionalDamage = [];
   const weaponDiceRolled = [];
   const weaponExplanations = [];
   let heroicUsed = null;
+  let allRolls = [];
   
-  const weaponResult = rollWeaponDamage(critical, savage, heroic);
+  // Roll weapon damage first
+  const weaponResult = rollWeaponDamage(critical, savage);
   weaponDamage += weaponResult.damage;
   weaponDiceRolled.push(...weaponResult.diceRolled);
   weaponExplanations.push(...weaponResult.explanations);
-  heroicUsed = weaponResult.heroicUsed || null;
+  allRolls.push(...weaponResult.allRolls);
   
+  // Roll brutal strike if specified
   if (brutal) {
-    let brutalDie = rollDie(BRUTAL_STRIKE_DIE, GREAT_WEAPON_FIGHTING);
-    
-    if (heroic && !heroicUsed) {
-      const originalBrutal = brutalDie;
-      brutalDie = rollDie(BRUTAL_STRIKE_DIE, false);
-      heroicUsed = {
-        originalRoll: originalBrutal,
-        newRoll: brutalDie,
-        source: "Brutal Strike"
-      };
-    }
-    
+    const brutalDie = rollDie(BRUTAL_STRIKE_DIE, GREAT_WEAPON_FIGHTING);
     weaponDamage += brutalDie;
     weaponDiceRolled.push(`d${BRUTAL_STRIKE_DIE}(${brutalDie})`);
     weaponExplanations.push(`1d${BRUTAL_STRIKE_DIE} Brutal Strike`);
+    allRolls.push({ value: brutalDie, die: BRUTAL_STRIKE_DIE, source: "Brutal Strike" });
   }
   
+  // Check for Heroic Inspiration opportunity
+  if (HEROIC_INSPIRATION_AVAILABLE && allRolls.length > 0) {
+    // Find the lowest roll
+    const lowestRoll = allRolls.reduce((lowest, roll) => 
+      roll.value < lowest.value ? roll : lowest
+    );
+    
+    // Prompt if the lowest roll is 4 or below
+    if (lowestRoll.value <= 4) {
+      console.log(`\nYou rolled a ${lowestRoll.value} on your ${lowestRoll.source}.`);
+      
+      try {
+        const useHeroic = await askHeroicInspiration(lowestRoll.value, lowestRoll.source);
+        
+        if (useHeroic) {
+          const newRoll = rollDie(lowestRoll.die, false);
+          console.log(`Heroic Inspiration: ${lowestRoll.value} -> ${newRoll}\n`);
+          
+          // Update the damage calculations
+          const difference = newRoll - lowestRoll.value;
+          weaponDamage += difference;
+          
+          // Update the dice display
+          const dieIndex = weaponDiceRolled.findIndex(die => die.includes(`(${lowestRoll.value})`));
+          if (dieIndex !== -1) {
+            weaponDiceRolled[dieIndex] = weaponDiceRolled[dieIndex].replace(`(${lowestRoll.value})`, `(${newRoll})`);
+          }
+          
+          heroicUsed = {
+            originalRoll: lowestRoll.value,
+            newRoll: newRoll,
+            source: lowestRoll.source
+          };
+        } else {
+          console.log('Keeping the original roll.\n');
+        }
+      } catch (error) {
+        console.log('Skipping Heroic Inspiration.\n');
+      }
+    }
+  }
+  
+  // Add flat bonuses to weapon damage
   const flatBonuses = Object.values(DAMAGE_BONUSES).reduce((sum, bonus) => sum + bonus, 0);
   weaponDamage += flatBonuses;
   
+  // Add additional damage dice
   for (const [source, config] of Object.entries(DAMAGE_DICE)) {
     const die = rollDie(config.die, false);
     additionalDamage.push({
@@ -212,6 +200,7 @@ function calculateDamage(args = {}) {
     });
   }
   
+  // Create breakdown string for manual rolling
   const weaponDiceString = weaponDiceRolled.join(' + ');
   const bonusString = flatBonuses > 0 ? ` + ${flatBonuses}` : '';
   const weaponBreakdown = weaponDiceString + bonusString;
@@ -249,59 +238,112 @@ function printResult(result, args) {
     .map(([key]) => `--${key}`)
     .join(' ');
   
-  console.log(chalk.yellow(`\n⚔️  ${CHARACTER_NAME}'s Attack Result`) + chalk.gray(` ${flags ? `(${flags})` : ''}:`));
-  console.log(chalk.red.bold(`💥 Weapon Damage: ${result.weaponTotal} piercing`));
+  // Special animation for critical hits
+  if (args.critical) {
+    console.log('\n💥 CRITICAL HIT! 💥');
+    
+    // Quick flash effect
+    const critMessages = [
+      '⚡ DEVASTATING BLOW! ⚡',
+      '🔥 MAXIMUM DAMAGE! 🔥',
+      '💀 ENEMY TREMBLES! 💀'
+    ];
+    
+    for (let i = 0; i < 3; i++) {
+      process.stdout.write('\r' + critMessages[i % critMessages.length]);
+      const start = Date.now();
+      while (Date.now() - start < 200) {}
+    }
+    
+    console.log('\r💥 CRITICAL HIT CONFIRMED! 💥');
+    console.log('═'.repeat(50));
+  }
+  
+  console.log(`\n⚔️  ${CHARACTER_NAME}'s Attack Result ${flags ? `(${flags})` : ''}:`);
+  
+  // Extra dramatic display for crits
+  if (args.critical) {
+    console.log(`💥💥 CRITICAL WEAPON DAMAGE: ${chalk.red.bold(result.weaponTotal)} piercing 💥💥`);
+  } else {
+    console.log(`💥 Weapon Damage: ${chalk.red.bold(result.weaponTotal)} piercing`);
+  }
   
   if (result.additionalDamage.length > 0) {
     result.additionalDamage.forEach(dmg => {
-      console.log(chalk.magenta(`✨ Additional: ${dmg.amount} ${dmg.type}`));
+      console.log(`✨ Additional: ${chalk.yellow(dmg.amount)} ${dmg.type}`);
     });
   }
   
-  console.log(chalk.blue(`\n🎲 For manual rolling:`));
-  console.log(chalk.cyan(`Dice: ${result.breakdown}`));
-  console.log(chalk.green(`Breakdown: ${result.explanation}`));
+  // Special message for high damage
+  if (result.weaponTotal >= 25) {
+    console.log('🎉 EPIC DAMAGE! The battlefield shakes! 🎉');
+  } else if (result.weaponTotal >= 20) {
+    console.log('⚡ Solid hit! Your enemy staggers! ⚡');
+  }
+  
+  console.log(`\n🎲 For manual rolling:`);
+  console.log(`Dice: ${result.breakdown}`);
+  console.log(`Breakdown: ${result.explanation}`);
+  
+  if (args.critical) {
+    console.log('═'.repeat(50));
+  }
 }
 
 async function interactiveMode() {
+  // Show greeting once at startup
   console.log(chalk.yellow.bold(`\n⚔️  Hello ${CHARACTER_NAME}!`));
-  console.log(chalk.gray('Select your attack modifiers:\n'));
+  console.log('Ready for combat. Select your attack modifiers:\n');
   
-  const answers = await inquirer.prompt([
-    {
-      type: 'checkbox',
-      name: 'modifiers',
-      message: 'Which modifiers apply to this attack?',
-      choices: [
-        { name: chalk.yellow('🗡️  Brutal Strike') + chalk.gray(' (1d10 extra damage, once per turn)'), value: 'brutal' },
-        { name: chalk.red('💥 Critical Hit') + chalk.gray(' (double weapon dice)'), value: 'critical' },
-        { name: chalk.blue('⚡ Savage Attacks') + chalk.gray(' (reroll weapon dice, keep higher)'), value: 'savage' },
-        { name: chalk.magenta('✨ Heroic Inspiration') + chalk.gray(' (reroll lowest die)'), value: 'heroic' }
-      ]
+  let firstAttack = true;
+  
+  try {
+    while (true) {
+      // Don't show extra spacing on first attack
+      if (!firstAttack) {
+        console.log('\n' + '─'.repeat(40));
+        console.log('Next attack:');
+      }
+      firstAttack = false;
+      
+      const answers = await inquirer.prompt([
+        {
+          type: 'checkbox',
+          name: 'modifiers',
+          message: 'Which modifiers apply to this attack?',
+          choices: [
+            { name: 'Brutal Strike (1d10 extra damage, once per turn)', value: 'brutal' },
+            { name: 'Critical Hit (double weapon dice)', value: 'critical' },
+            { name: 'Savage Attacks (reroll weapon dice, keep higher)', value: 'savage' }
+          ]
+        }
+      ]);
+      
+      const options = {
+        brutal: answers.modifiers.includes('brutal'),
+        critical: answers.modifiers.includes('critical'),
+        savage: answers.modifiers.includes('savage')
+      };
+      
+      const result = await calculateDamage(options);
+      printResult(result, options);
+      
+      const { again } = await inquirer.prompt([
+        {
+          type: 'confirm',
+          name: 'again',
+          message: 'Roll another attack?',
+          default: false
+        }
+      ]);
+      
+      if (!again) {
+        console.log(chalk.yellow.bold('\n⚔️  Farewell, ' + CHARACTER_NAME + '! May your blade stay sharp! ⚔️'));
+        break;
+      }
     }
-  ]);
-  
-  const options = {
-    brutal: answers.modifiers.includes('brutal'),
-    critical: answers.modifiers.includes('critical'),
-    savage: answers.modifiers.includes('savage'),
-    heroic: answers.modifiers.includes('heroic')
-  };
-  
-  const result = calculateDamage(options);
-  printResult(result, options);
-  
-  const { again } = await inquirer.prompt([
-    {
-      type: 'confirm',
-      name: 'again',
-      message: chalk.yellow('Roll another attack?'),
-      default: false
-    }
-  ]);
-  
-  if (again) {
-    await interactiveMode();
+  } catch (error) {
+    console.log(chalk.yellow.bold('\n⚔️  Until next time, ' + CHARACTER_NAME + '! ⚔️'));
   }
 }
 
@@ -321,9 +363,8 @@ program
   .option('-b, --brutal', 'Add Brutal Strike damage')
   .option('-c, --critical', 'Roll as critical hit')
   .option('-s, --savage', 'Use Savage Attacks')
-  .option('--heroic', 'Use Heroic Inspiration')
-  .action((options) => {
-    const result = calculateDamage(options);
+  .action(async (options) => {
+    const result = await calculateDamage(options);
     printResult(result, options);
   });
 
@@ -333,41 +374,9 @@ program
   .description('Interactive mode with prompts')
   .action(interactiveMode);
 
-// Default to interactive mode if no command specified
+// Main execution
 if (process.argv.length === 2) {
   interactiveMode();
 } else {
   program.parse();
 }
-
-program
-  .name('attack')
-  .description(chalk.yellow(`${CHARACTER_NAME}'s D&D Damage Calculator`))
-  .version('1.0.0');
-
-program
-  .command('roll')
-  .description('Roll damage with specified modifiers')
-  .option('-b, --brutal', 'Add Brutal Strike damage')
-  .option('-c, --critical', 'Roll as critical hit')
-  .option('-s, --savage', 'Use Savage Attacks')
-  .option('-h, --heroic', 'Use Heroic Inspiration')
-  .action((options) => {
-    const result = calculateDamage(options);
-    printResult(result, options);
-  });
-
-program
-  .command('interactive')
-  .alias('i')
-  .description('Interactive mode with prompts')
-  .action(interactiveMode);
-
-// Default to interactive mode if no command specified
-if (process.argv.length === 2) {
-  interactiveMode();
-} else {
-  program.parse();
-}
-
-export { calculateDamage, DAMAGE_BONUSES, WEAPON_DIE, WEAPON_NAME };
