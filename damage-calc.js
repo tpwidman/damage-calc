@@ -12,7 +12,7 @@ import readline from 'readline';
 const CHARACTER_NAME = "Dumnorix";
 const WEAPON_DIE = 10;
 const WEAPON_NAME = "pike";
-const HEROIC_INSPIRATION_AVAILABLE = false; // Set to false when used up
+const HEROIC_INSPIRATION_AVAILABLE = true; // Set to false when used up
 let heroicInspirationAvailable = HEROIC_INSPIRATION_AVAILABLE;
 
 const DAMAGE_BONUSES = {
@@ -27,7 +27,7 @@ const DAMAGE_DICE = {
 };
 
 const BRUTAL_STRIKE_DIE = 10;
-const GREAT_WEAPON_FIGHTING = false;
+const GREAT_WEAPON_FIGHTING = true;
 
 // =============================================================================
 // CORE FUNCTIONS
@@ -247,21 +247,53 @@ function printResult(result, args) {
   if (args.critical) {
     console.log('\n💥 CRITICAL HIT! 💥');
     
-    // Quick flash effect
-    const critMessages = [
-      '⚡ DEVASTATING BLOW! ⚡',
-      '🔥 MAXIMUM DAMAGE! 🔥',
-      '💀 ENEMY TREMBLES! 💀'
+    // ASCII Fireworks effect
+    const fireworks = [
+      '      ✦       ✧       ✦      ',
+      '   ✧     ✦       ✦     ✧   ',
+      '✦    ✧  💥 BOOM! 💥  ✧    ✦',
+      '   ✧     ✦       ✦     ✧   ',
+      '      ✦       ✧       ✦      '
     ];
     
-    for (let i = 0; i < 3; i++) {
-      process.stdout.write('\r' + critMessages[i % critMessages.length]);
-      const start = Date.now();
-      while (Date.now() - start < 200) {}
+    // Show fireworks sequence
+    console.log('');
+    fireworks.forEach(line => {
+      console.log(chalk.yellow(line));
+      const delay = Date.now();
+      while (Date.now() - delay < 150) {}
+    });
+    
+    // Flash effect with more dramatic messages
+    const critMessages = [
+      chalk.red.bold('⚡ DEVASTATING BLOW! ⚡'),
+      chalk.yellow.bold('🔥 MAXIMUM CARNAGE! 🔥'),
+      chalk.red.bold('💀 ENEMY ANNIHILATED! 💀'),
+      chalk.yellow.bold('⭐ LEGENDARY STRIKE! ⭐')
+    ];
+    
+    for (let i = 0; i < 4; i++) {
+      process.stdout.write('\r' + ' '.repeat(60) + '\r');
+      process.stdout.write(critMessages[i % critMessages.length]);
+      const flashStart = Date.now();
+      while (Date.now() - flashStart < 250) {}
     }
     
-    console.log('\r💥 CRITICAL HIT CONFIRMED! 💥');
-    console.log('═'.repeat(50));
+    // Final explosion ASCII
+    const explosion = [
+      '',
+      '         ✦ ✧ ✦ ✧ ✦         ',
+      '      ✧ ✦ 💥 CRIT! 💥 ✦ ✧      ',
+      '   ✦ ✧ ⚡ CONFIRMED! ⚡ ✧ ✦   ',
+      '      ✧ ✦ 💥 EPIC! 💥 ✦ ✧      ',
+      '         ✦ ✧ ✦ ✧ ✦         ',
+      ''
+    ];
+    
+    process.stdout.write('\r' + ' '.repeat(60) + '\r');
+    explosion.forEach(line => console.log(chalk.red.bold(line)));
+    
+    console.log(chalk.red('═'.repeat(50)));
   }
   
   console.log(`\n⚔️  ${CHARACTER_NAME}'s Attack Result ${flags ? `(${flags})` : ''}:`);
