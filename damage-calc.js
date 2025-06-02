@@ -12,7 +12,7 @@ import readline from 'readline';
 const CHARACTER_NAME = "Dumnorix";
 const WEAPON_DIE = 10;
 const WEAPON_NAME = "pike";
-const HEROIC_INSPIRATION_AVAILABLE = true; // Set to false when used up
+const HEROIC_INSPIRATION_AVAILABLE = false; // Set to false when used up
 let heroicInspirationAvailable = HEROIC_INSPIRATION_AVAILABLE;
 
 const DAMAGE_BONUSES = {
@@ -27,7 +27,7 @@ const DAMAGE_DICE = {
 };
 
 const BRUTAL_STRIKE_DIE = 10;
-const GREAT_WEAPON_FIGHTING = true;
+const GREAT_WEAPON_FIGHTING = false;
 
 // =============================================================================
 // CORE FUNCTIONS
