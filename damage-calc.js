@@ -13,6 +13,7 @@ const CHARACTER_NAME = "Dumnorix";
 const WEAPON_DIE = 10;
 const WEAPON_NAME = "pike";
 const HEROIC_INSPIRATION_AVAILABLE = true; // Set to false when used up
+let heroicInspirationAvailable = HEROIC_INSPIRATION_AVAILABLE;
 
 const DAMAGE_BONUSES = {
   strength: 4,
@@ -146,7 +147,7 @@ async function calculateDamage(args = {}) {
   }
   
   // Check for Heroic Inspiration opportunity
-  if (HEROIC_INSPIRATION_AVAILABLE && allRolls.length > 0) {
+  if (heroicInspirationAvailable && allRolls.length > 0) {
     // Find the lowest roll
     const lowestRoll = allRolls.reduce((lowest, roll) => 
       roll.value < lowest.value ? roll : lowest
@@ -161,7 +162,11 @@ async function calculateDamage(args = {}) {
         
         if (useHeroic) {
           const newRoll = rollDie(lowestRoll.die, false);
-          console.log(`Heroic Inspiration: ${lowestRoll.value} -> ${newRoll}\n`);
+          console.log(`Heroic Inspiration: ${lowestRoll.value} -> ${newRoll}`);
+          console.log(chalk.gray('(Heroic Inspiration used - no longer available this session)\n'));
+          
+          // Toggle off heroic inspiration for the rest of the session
+          heroicInspirationAvailable = false;
           
           // Update the damage calculations
           const difference = newRoll - lowestRoll.value;
@@ -305,6 +310,12 @@ async function interactiveMode() {
         console.log('Next attack:');
       }
       firstAttack = false;
+      
+      // Show current status
+      const heroicStatus = heroicInspirationAvailable 
+        ? chalk.green('✨ Available') 
+        : chalk.gray('✨ Used');
+      console.log(`Heroic Inspiration: ${heroicStatus}\n`);
       
       const answers = await inquirer.prompt([
         {
