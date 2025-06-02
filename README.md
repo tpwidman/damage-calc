@@ -45,7 +45,18 @@ A beautiful CLI tool for calculating damage for Dumnorix the Barbarian in D&D 20
 ```bash
 node damage-calc.js
 ```
-![Interactive Demo](https://via.placeholder.com/600x300/1a1a1a/00ff00?text=Interactive+Mode+Demo)
+
+You'll see a beautiful prompt like this:
+```
+⚔️  Hello Dumnorix!
+Select your attack modifiers:
+
+? Which modifiers apply to this attack? 
+❯◯ 🗡️  Brutal Strike (1d10 extra damage, once per turn)
+ ◯ 💥 Critical Hit (double weapon dice)
+ ◯ ⚡ Savage Attacks (reroll weapon dice, keep higher)
+ ◯ ✨ Heroic Inspiration (reroll lowest die)
+```
 
 ### Quick Commands
 ```bash
