@@ -17,7 +17,7 @@ A beautiful CLI tool for calculating damage for Dumnorix the Barbarian in D&D 20
 
 - **Brutal Strike**: Add 1d10 damage (once per turn)
 - **Savage Attacks**: Reroll weapon dice, keep higher result
-- **Heroic Inspiration**: Reroll lowest die for maximum benefit
+- **Heroic Inspiration**: Session-based tracking (auto-prompts when you roll ≤4, then toggles off)
 - **Great Weapon Fighting**: Automatically rerolls 1s and 2s
 - **Critical Hits**: Double weapon dice with Savage Attacks support
 
@@ -69,26 +69,31 @@ node damage-calc.js roll --brutal
 # Critical hit with Savage Attacks
 node damage-calc.js roll --critical --savage
 
-# Everything combined
-node damage-calc.js roll --brutal --critical --savage --heroic
+# Everything combined (heroic will auto-prompt if you roll low)
+node damage-calc.js roll --brutal --critical --savage
 ```
 
 ### Available Flags
 - `-b, --brutal` - Add Brutal Strike damage (1d10)
 - `-c, --critical` - Roll as critical hit (2d10 weapon damage)
 - `-s, --savage` - Use Savage Attacks (reroll weapon dice, keep higher)
-- `--heroic` - Use Heroic Inspiration (reroll lowest die)
+
+**Note:** Heroic Inspiration is configured in the script and will automatically prompt you if you roll low (4 or below on any die).
 
 ## 📊 Example Output
 
 ```
-⚔️  Dumnorix's Attack Result (--brutal --savage --heroic):
+⚔️  Dumnorix's Attack Result (--brutal --savage):
+
+You rolled a 2 on your Brutal Strike.
+? Use Heroic Inspiration to reroll the 2? Yes
+Heroic Inspiration: 2 → 8
+
 💥 Weapon Damage: 28 piercing
-✨ Additional: 3 fire damage
 
 🎲 For manual rolling:
-Dice: d10(8) + d10(6) + 12 + d4(3) fire damage
-Breakdown: 1d10 pike + Savage Attacks (8 > 4) + 1d10 Brutal Strike + 4 strength + 3 rage + 4 heavy weapon mastery + 1 magic weapon [Heroic Inspiration: pike damage 2→8] + 3 fire damage
+Dice: d10(8) + d10(8) + 12
+Breakdown: 1d10 pike + Savage Attacks (8 > 4) + 1d10 Brutal Strike + 4 strength + 3 rage + 4 heavy weapon mastery + 1 magic weapon [Heroic Inspiration: Brutal Strike 2→8]
 ```
 
 ## ⚙️ Configuration
@@ -100,6 +105,8 @@ Edit the config block at the top of `damage-calc.js` to customize for your chara
 const CHARACTER_NAME = "Dumnorix";
 const WEAPON_DIE = 10;  // d10 for pike
 const WEAPON_NAME = "pike";
+const HEROIC_INSPIRATION_AVAILABLE = true; // Set to false if you don't have it
+let heroicInspirationAvailable = HEROIC_INSPIRATION_AVAILABLE; // Session tracking
 
 // Flat damage bonuses
 const DAMAGE_BONUSES = {
@@ -165,7 +172,7 @@ This calculator implements the following D&D 2024 rules:
 
 - **Savage Attacks**: "Once per turn when you hit a target with a weapon, you can roll the weapon's damage dice twice and use either roll against the target."
 - **Brutal Strike**: "Instead of gaining advantage from Reckless Attack, you can add 1d10 damage to the attack if it hits" (once per turn)
-- **Heroic Inspiration**: "You can expend it to reroll any die immediately after rolling it, and you must use the new roll."
+- **Heroic Inspiration**: "You can expend it to reroll any die immediately after rolling it, and you must use the new roll." (Prompts automatically when you roll ≤4)
 - **Great Weapon Fighting**: "When you roll a 1 or 2 on a damage die for an attack you make with a melee weapon that you are wielding with two hands, you can reroll the die and must use the new roll, even if the new roll is a 1 or a 2."
 
 ## 🤝 Contributing
