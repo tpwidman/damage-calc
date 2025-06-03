@@ -1,0 +1,44 @@
+{
+  "character": {
+    "name": "Dumnorix",
+    "weapon": {
+      "die": 10,
+      "name": "pike"
+    },
+    "features": {
+      "brutal_strike": {
+        "available": true,
+        "once_per_turn": true
+      },
+      "gwm": {
+        "enabled": true
+      },
+      "savage_attacks": {
+        "enabled": true
+      },
+      "great_weapon_fighting": {
+        "enabled": true
+      }
+    },
+    "attack_modifiers": {
+      "strength": 4,
+      "proficiency": 4,
+      "magic_weapon": 1
+    },
+    "damage_bonuses": {
+      "strength": 4,
+      "rage": 3,
+      "heavy_weapon_mastery": 4,
+      "magic_weapon": 1
+    },
+    "additional_damage_dice": {}
+  },
+  "session": {
+    "heroic_inspiration": false,
+    "current_turn": 11,
+    "temp_effects": []
+  },
+  "settings": {
+    "enable_crit_animations": true
+  }
+}

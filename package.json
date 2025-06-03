@@ -1,17 +1,22 @@
 {
   "name": "dnd-damage-calc",
   "version": "1.0.0",
-  "type": "module",
   "description": "D&D damage calculator for Dumnorix the Barbarian",
-  "main": "damage-calc.js",
+  "main": "main.ts",
+  "type": "module",
   "scripts": {
-    "start": "node damage-calc.js",
-    "attack": "node damage-calc.js"
+    "start": "tsx main.ts",
+    "dev": "tsx watch main.ts"
   },
   "dependencies": {
     "chalk": "^4.1.2",
     "chalk-animation": "^2.0.3",
     "commander": "^11.0.0",
     "inquirer": "^9.0.0"
+  },
+  "devDependencies": {
+    "@types/chalk-animation": "^1.6.3",
+    "@types/inquirer": "^9.0.8",
+    "tsx": "^4.19.4"
   }
 }
