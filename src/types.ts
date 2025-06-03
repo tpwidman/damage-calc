@@ -9,9 +9,27 @@ export interface Feature {
   enabled?: boolean;
 }
 
+export interface WildMagicEffect {
+  roll: number;
+  description: string;
+  effect_type: 'damage' | 'utility' | 'defensive' | 'offensive';
+  duration: 'instant' | 'rage' | 'turn';
+  bonus_action_repeatable?: boolean;
+  requires_save?: boolean;
+  save_type?: 'Constitution' | 'Dexterity';
+  damage_type?: string;
+}
+
 export interface Character {
   name: string;
+  level: number;
+  class: string;
+  subclass: string;
   weapon: Weapon;
+  base_stats: {
+    strength_modifier: number;
+    constitution_modifier: number;
+  };
   attack_modifiers: {
     strength: number;
     proficiency: number;
@@ -22,9 +40,13 @@ export interface Character {
     gwm: Feature;
     savage_attacks: Feature;
     great_weapon_fighting: Feature;
+    reckless_attack: Feature;
   };
   damage_bonuses: Record<string, number>;
   additional_damage_dice: Record<string, { die: number; description: string }>;
+  magic_items: {
+    weapon_bonus: number;
+  };
 }
 
 export interface TempEffect {
@@ -38,6 +60,9 @@ export interface TempEffect {
 export interface Session {
   heroic_inspiration: boolean;
   current_turn: number;
+  rage_active: boolean;
+  rages_remaining: number;
+  current_wild_magic: WildMagicEffect | null;
   temp_effects: TempEffect[];
 }
 
@@ -69,7 +94,6 @@ export interface DamageResult {
   };
 }
 
-
 export interface AttackHistoryEntry {
   timestamp: string;
   damage: number;
@@ -89,4 +113,12 @@ export interface DieRoll {
   value: number;
   die: number;
   source: string;
+}
+
+export interface LevelProgression {
+  level: number;
+  proficiency_bonus: number;
+  rages: number;
+  rage_damage: number;
+  features: string[];
 }

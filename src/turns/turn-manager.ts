@@ -1,13 +1,14 @@
 import chalk from 'chalk';
 import inquirer from 'inquirer';
-import { saveConfig } from '../utils/config-loader';
-import { rollAttackInteractive } from '../rolls/attack';
-import { rollDamageInteractive } from '../rolls/damage';
+import { saveConfig } from '../utils/config-loader.js';
+import { rollAttackInteractive } from '../rolls/attack.js';
+// import { rollDamageInteractive } from '../rolls/damage.js';
 import { resetBrutalStrike } from '../features/brutal-strike';
-import type { Config } from '../types';
-import { resetSavageAttacks, getSavageAttacksStatus } from '../features/savage-attacker';
-import { startTurnHistory, endTurnHistory } from './turn-history';
-
+import { startTurnHistory, endTurnHistory } from './turn-history.js';
+import { promptRageActivation, getRageStatus } from '../features/rage-manager';
+import type { Config } from '../types.js';
+import { displayCurrentWildMagic, useWildMagicBonusAction, EFFECT_DECORATIONS } from '../features/wild-magic';
+import { logDebug } from '../utils/logger';
 
 interface TurnState {
   attacksUsed: number;
@@ -18,40 +19,58 @@ interface TurnState {
 }
 
 export async function startTurnSequence(config: Config): Promise<void> {
+  logDebug('Starting turn sequence...');
+  
   console.clear();
   console.log(chalk.yellow.bold(`🌟 Starting Turn ${config.session.current_turn} 🌟\n`));
   
-  // Start turn history tracking
-  startTurnHistory(config.session.current_turn);
-  
-  const turnState: TurnState = {
-    attacksUsed: 0,
-    maxAttacks: 2, // Level 5+ gets 2 attacks
-    bonusActionUsed: false,
-    savageAttacksUsed: false,
-    brutalStrikeUsed: false
-  };
-  
   try {
+    // Check if rage should be activated
+    logDebug('Checking rage activation...');
+    if (!config.session.rage_active && config.session.rages_remaining > 0) {
+      logDebug('Prompting for rage activation...');
+      const shouldRage = await promptRageActivation(config);
+      logDebug('Rage activation result:', shouldRage);
+      
+      if (shouldRage) {
+        logDebug('Saving config after rage activation...');
+        saveConfig(config);
+        logDebug('Config saved successfully');
+      }
+    }
+    
+    logDebug('Starting turn history tracking...');
+    startTurnHistory(config.session.current_turn);
+    
+    logDebug('Creating turn state...');
+    const turnState: TurnState = {
+      attacksUsed: 0,
+      maxAttacks: 2, // Level 5+ gets 2 attacks
+      bonusActionUsed: false,
+      savageAttacksUsed: false,
+      brutalStrikeUsed: false
+    };
+    
+    logDebug('Entering main turn loop...');
     while (true) {
+      logDebug('Displaying turn menu...');
       const action = await displayTurnMenu(config, turnState);
+      logDebug('Selected action:', action);
       
       switch (action) {
         case 'attack':
-            if (turnState.attacksUsed < turnState.maxAttacks) {
-                await rollAttackInteractive(config, true); // true = auto-damage
-                turnState.attacksUsed++;
-            } else {
-                console.log(chalk.red('❌ No more attacks available this turn!'));
-                await pause();
-            }
-            break;
-          
-        case 'damage':
-          await rollDamageInteractive(config);
+          logDebug('Processing attack...');
+          if (turnState.attacksUsed < turnState.maxAttacks) {
+            await rollAttackInteractive(config, true);
+            turnState.attacksUsed++;
+          } else {
+            console.log(chalk.red('❌ No more attacks available this turn!'));
+            await pause();
+          }
           break;
           
         case 'bonus_action':
+          logDebug('Processing bonus action...');
           if (!turnState.bonusActionUsed) {
             await handleBonusAction(config, turnState);
           } else {
@@ -60,20 +79,41 @@ export async function startTurnSequence(config: Config): Promise<void> {
           }
           break;
           
+        case 'check_wild_magic':
+          displayCurrentWildMagic(config);
+          await pause();
+          break;
+          
+        case 'wild_magic_bonus':
+          if (!turnState.bonusActionUsed) {
+            const used = await useWildMagicBonusAction(config);
+            if (used) {
+              turnState.bonusActionUsed = true;
+            }
+            await pause();
+          }
+          break;
+          
         case 'end_turn':
+          logDebug('Ending turn...');
           await endTurn(config);
           return;
           
         case 'exit':
+          logDebug('Exiting turn sequence...');
           return;
       }
     }
   } catch (error) {
-    console.log(chalk.yellow('Exiting turn sequence...'));
+    console.error('DEBUG: Error in turn sequence:', error);
+    console.log('Exiting turn sequence due to error...');
+    throw error; // Re-throw so we can see the actual error
   }
 }
 
 async function displayTurnMenu(config: Config, turnState: TurnState): Promise<string> {
+  logDebug('Entering displayTurnMenu...');
+  
   console.clear();
   
   console.log(chalk.yellow.bold(`⚔️ ${config.character.name} - Turn ${config.session.current_turn}\n`));
@@ -86,15 +126,23 @@ async function displayTurnMenu(config: Config, turnState: TurnState): Promise<st
   const bonusStatus = turnState.bonusActionUsed 
     ? chalk.gray('Used') 
     : chalk.green('Available');
-  const brutalStatus = config.character.features.brutal_strike.available
-    ? chalk.green('Available')
-    : chalk.gray('Used');
-  const savageStatus = getSavageAttacksStatus(config);
+  
+  const rageStatus = getRageStatus(config);
   
   console.log(`Attacks: ${attackStatus} (${turnState.attacksUsed}/${turnState.maxAttacks})`);
   console.log(`⭐ Bonus Action: ${bonusStatus}`);
-  console.log(`Brutal Strike: ${brutalStatus}`);
-  console.log(`Savage Attacks: ${savageStatus}\n`);
+  console.log(`🔥 Rage: ${rageStatus}`);
+  
+  // Show Wild Magic status
+  if (config.session.current_wild_magic) {
+    const effect = config.session.current_wild_magic;
+    const decoration = EFFECT_DECORATIONS[effect.damage_type || 'force'];
+    console.log(`✨ Wild Magic: ${decoration.color('Active')} ${decoration.icon}`);
+  } else {
+    console.log('✨ Wild Magic: None');
+  }
+  
+  console.log('');
   
   const choices = [
     { 
@@ -106,12 +154,22 @@ async function displayTurnMenu(config: Config, turnState: TurnState): Promise<st
       name: `⭐ Bonus Action${turnState.bonusActionUsed ? ' (USED)' : ''}`, 
       value: 'bonus_action',
       disabled: turnState.bonusActionUsed
-    },
-    { name: '🔄 End Turn', value: 'end_turn' },
-    { name: '🚪 Exit to Main Menu', value: 'exit' }
+    }
   ];
   
-  // Remove standalone damage roll from turn menu
+  // Add Wild Magic options
+  if (config.session.current_wild_magic) {
+    choices.push({ name: '✨ Check Wild Magic Effect', value: 'check_wild_magic', disabled: false });
+    
+    if (config.session.current_wild_magic.bonus_action_repeatable && !turnState.bonusActionUsed) {
+      choices.push({ name: '🌀 Use Wild Magic Bonus Action', value: 'wild_magic_bonus', disabled: false });
+    }
+  }
+  
+  choices.push(
+    { name: '🔄 End Turn', value: 'end_turn', disabled: false },
+    { name: '🚪 Exit to Main Menu', value: 'exit', disabled: false }
+  );
   
   const { action } = await inquirer.prompt([
     {
@@ -126,7 +184,8 @@ async function displayTurnMenu(config: Config, turnState: TurnState): Promise<st
 }
 
 async function handleBonusAction(config: Config, turnState: TurnState): Promise<void> {
-  console.log(chalk.yellow('🎯 Bonus Action - Coming Soon!'));
+  logDebug('In handleBonusAction...');
+  console.log(chalk.yellow('⭐ Bonus Action - Coming Soon!'));
   console.log('Future features:');
   console.log('• GWM bonus attack (on crit/kill)');
   console.log('• Off-hand attack');
@@ -137,6 +196,7 @@ async function handleBonusAction(config: Config, turnState: TurnState): Promise<
 }
 
 async function endTurn(config: Config): Promise<void> {
+  logDebug('In endTurn...');
   console.log(chalk.green('\n🔄 Ending turn...'));
   
   // End turn history tracking
@@ -147,7 +207,6 @@ async function endTurn(config: Config): Promise<void> {
   
   // Reset once-per-turn features
   resetBrutalStrike(config);
-  resetSavageAttacks();
   
   saveConfig(config);
   

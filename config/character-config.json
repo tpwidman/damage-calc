@@ -1,9 +1,26 @@
 {
   "character": {
     "name": "Dumnorix",
+    "level": 10,
+    "class": "barbarian",
+    "subclass": "wild_magic",
     "weapon": {
       "die": 10,
       "name": "pike"
+    },
+    "base_stats": {
+      "strength_modifier": 4,
+      "constitution_modifier": 3
+    },
+    "attack_modifiers": {
+      "strength": 4,
+      "proficiency": 4,
+      "magic_weapon": 1
+    },
+    "damage_bonuses": {
+      "strength": 4,
+      "heavy_weapon_mastery": 4,
+      "magic_weapon": 1
     },
     "features": {
       "brutal_strike": {
@@ -18,24 +35,30 @@
       },
       "great_weapon_fighting": {
         "enabled": true
+      },
+      "reckless_attack": {
+        "enabled": true
       }
     },
-    "attack_modifiers": {
-      "strength": 4,
-      "proficiency": 4,
-      "magic_weapon": 1
-    },
-    "damage_bonuses": {
-      "strength": 4,
-      "rage": 3,
-      "heavy_weapon_mastery": 4,
-      "magic_weapon": 1
-    },
-    "additional_damage_dice": {}
+    "additional_damage_dice": {},
+    "magic_items": {
+      "weapon_bonus": 1
+    }
   },
   "session": {
     "heroic_inspiration": false,
-    "current_turn": 1,
+    "current_turn": 2,
+    "rage_active": true,
+    "rages_remaining": 3,
+    "current_wild_magic": {
+      "roll": 1,
+      "description": "Each creature of your choice within 30 feet must make a Constitution save or take 1d12 necrotic damage. You gain 1d12 temporary hit points.",
+      "effect_type": "offensive",
+      "duration": "instant",
+      "requires_save": true,
+      "save_type": "Constitution",
+      "damage_type": "necrotic"
+    },
     "temp_effects": []
   },
   "settings": {

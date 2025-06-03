@@ -14,6 +14,7 @@ const CHARACTER_NAME = "Dumnorix";
 const WEAPON_DIE = 10;
 const WEAPON_NAME = "pike";
 const HEROIC_INSPIRATION_AVAILABLE = true; // Set to false when used up
+const ENABLE_CRIT_ANIMATIONS = false; // Set to false to disable critical hit animations (for faster gameplay)
 let heroicInspirationAvailable = HEROIC_INSPIRATION_AVAILABLE;
 
 const DAMAGE_BONUSES = {
@@ -61,6 +62,14 @@ async function showCharacterIntro() {
 }
 
 async function animateCriticalHit() {
+  if (!ENABLE_CRIT_ANIMATIONS) {
+    // Simple static critical hit display
+    console.log('\n💥 CRITICAL HIT! 💥');
+    console.log(chalk.red.bold('⚡ DEVASTATING BLOW! ⚡'));
+    console.log('');
+    return;
+  }
+
   console.log('\n💥 CRITICAL HIT! 💥');
   
   // ASCII Fireworks effect
@@ -130,6 +139,11 @@ async function animateCriticalHit() {
 }
 
 async function animateDamageResult(damage, isCritical = false) {
+  if (!ENABLE_CRIT_ANIMATIONS && isCritical) {
+    // Skip damage animation for crits when animations are disabled
+    return;
+  }
+  
   if (isCritical) {
     // Pulse the damage number for crits
     const damageAnimation = chalkAnimation.pulse(`DAMAGE: ${damage}`);
@@ -395,13 +409,21 @@ async function printResult(result, args) {
   
   // Animated celebration for high damage
   if (result.weaponTotal >= 30) {
-    const epicAnimation = chalkAnimation.rainbow('🎉 LEGENDARY DAMAGE! The gods themselves take notice! 🎉');
-    await sleep(3000);
-    epicAnimation.stop();
+    if (ENABLE_CRIT_ANIMATIONS) {
+      const epicAnimation = chalkAnimation.rainbow('🎉 LEGENDARY DAMAGE! The gods themselves take notice! 🎉');
+      await sleep(3000);
+      epicAnimation.stop();
+    } else {
+      console.log(chalk.yellow.bold('🎉 LEGENDARY DAMAGE! The gods themselves take notice! 🎉'));
+    }
   } else if (result.weaponTotal >= 25) {
-    const greatAnimation = chalkAnimation.pulse('🎉 EPIC DAMAGE! The battlefield shakes! 🎉');
-    await sleep(2000);
-    greatAnimation.stop();
+    if (ENABLE_CRIT_ANIMATIONS) {
+      const greatAnimation = chalkAnimation.pulse('🎉 EPIC DAMAGE! The battlefield shakes! 🎉');
+      await sleep(2000);
+      greatAnimation.stop();
+    } else {
+      console.log(chalk.yellow.bold('🎉 EPIC DAMAGE! The battlefield shakes! 🎉'));
+    }
   } else if (result.weaponTotal >= 20) {
     console.log('⚡ Solid hit! Your enemy staggers! ⚡');
   }
