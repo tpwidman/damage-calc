@@ -47,21 +47,24 @@
   },
   "session": {
     "heroic_inspiration": false,
-    "current_turn": 2,
+    "current_turn": 11,
     "rage_active": true,
-    "rages_remaining": 3,
+    "rages_remaining": 0,
     "current_wild_magic": {
-      "roll": 1,
-      "description": "Each creature of your choice within 30 feet must make a Constitution save or take 1d12 necrotic damage. You gain 1d12 temporary hit points.",
-      "effect_type": "offensive",
-      "duration": "instant",
-      "requires_save": true,
-      "save_type": "Constitution",
-      "damage_type": "necrotic"
+      "roll": 2,
+      "description": "You teleport up to 30 feet. Until rage ends, you can use this as a bonus action each turn.",
+      "effect_type": "utility",
+      "duration": "rage",
+      "bonus_action_repeatable": true,
+      "damage_type": "teleport"
     },
     "temp_effects": []
   },
   "settings": {
-    "enable_crit_animations": true
+    "enable_crit_animations": true,
+    "testing_mode": {
+      "always_crit": true,
+      "force_heroic_inspiration": false
+    }
   }
 }

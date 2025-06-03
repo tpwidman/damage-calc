@@ -68,6 +68,10 @@ export interface Session {
 
 export interface Settings {
   enable_crit_animations: boolean;
+  testing_mode?: {
+    always_crit?: boolean;
+    force_heroic_inspiration?: boolean;
+  }
 }
 
 export interface Config {

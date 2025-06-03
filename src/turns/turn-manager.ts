@@ -1,14 +1,16 @@
 import chalk from 'chalk';
 import inquirer from 'inquirer';
-import { saveConfig } from '../utils/config-loader.js';
-import { rollAttackInteractive } from '../rolls/attack.js';
+import { saveConfig } from '../utils/config-loader';
+import { rollAttackInteractiveWithCallback } from '../rolls/attack';
 // import { rollDamageInteractive } from '../rolls/damage.js';
 import { resetBrutalStrike } from '../features/brutal-strike';
-import { startTurnHistory, endTurnHistory } from './turn-history.js';
+import { startTurnHistory, endTurnHistory } from './turn-history';
 import { promptRageActivation, getRageStatus } from '../features/rage-manager';
 import type { Config } from '../types.js';
 import { displayCurrentWildMagic, useWildMagicBonusAction, EFFECT_DECORATIONS } from '../features/wild-magic';
 import { logDebug } from '../utils/logger';
+import { sleep } from '../utils/animations';
+import { handleBonusActionMenu } from '../features/bonus-actions';
 
 interface TurnState {
   attacksUsed: number;
@@ -16,6 +18,9 @@ interface TurnState {
   bonusActionUsed: boolean;
   savageAttacksUsed: boolean;
   brutalStrikeUsed: boolean;
+  // GWM tracking
+  criticalHitThisTurn: boolean;
+  gwmHewAvailable: boolean;
 }
 
 export async function startTurnSequence(config: Config): Promise<void> {
@@ -48,9 +53,12 @@ export async function startTurnSequence(config: Config): Promise<void> {
       maxAttacks: 2, // Level 5+ gets 2 attacks
       bonusActionUsed: false,
       savageAttacksUsed: false,
-      brutalStrikeUsed: false
+      brutalStrikeUsed: false,
+      criticalHitThisTurn: false,
+      gwmHewAvailable: false
     };
     
+    // Continue with existing logic...
     logDebug('Entering main turn loop...');
     while (true) {
       logDebug('Displaying turn menu...');
@@ -61,8 +69,19 @@ export async function startTurnSequence(config: Config): Promise<void> {
         case 'attack':
           logDebug('Processing attack...');
           if (turnState.attacksUsed < turnState.maxAttacks) {
-            await rollAttackInteractive(config, true);
+            const wasCrit = await rollAttackInteractiveWithCallback(config, true, (isCrit) => {
+              if (isCrit) {
+                turnState.criticalHitThisTurn = true;
+                turnState.gwmHewAvailable = true;
+              }
+            });
             turnState.attacksUsed++;
+            
+            // Remind about GWM if crit and bonus action available
+            if (turnState.gwmHewAvailable && !turnState.bonusActionUsed) {
+              console.log(chalk.yellow.bold('\n🎯 GWM HEW AVAILABLE! You can make a bonus action attack!'));
+              await sleep(2000);
+            }
           } else {
             console.log(chalk.red('❌ No more attacks available this turn!'));
             await pause();
@@ -72,7 +91,7 @@ export async function startTurnSequence(config: Config): Promise<void> {
         case 'bonus_action':
           logDebug('Processing bonus action...');
           if (!turnState.bonusActionUsed) {
-            await handleBonusAction(config, turnState);
+            await handleBonusActionMenu(config, turnState);
           } else {
             console.log(chalk.red('❌ Bonus action already used this turn!'));
             await pause();
@@ -133,17 +152,22 @@ async function displayTurnMenu(config: Config, turnState: TurnState): Promise<st
   console.log(`⭐ Bonus Action: ${bonusStatus}`);
   console.log(`🔥 Rage: ${rageStatus}`);
   
-  // Show Wild Magic status
+  // ADD THIS SECTION - GWM status display
+  if (turnState.gwmHewAvailable && !turnState.bonusActionUsed) {
+    console.log(chalk.yellow.bold(`⚔️ GWM Hew: AVAILABLE!`));
+  } else if (config.character.features.gwm.enabled) {
+    console.log(chalk.gray(`⚔️ GWM Hew: ${turnState.criticalHitThisTurn ? 'Used' : 'Waiting for crit'}`));
+  }
+  
+  // Show Wild Magic status (existing code)
   if (config.session.current_wild_magic) {
     const effect = config.session.current_wild_magic;
-    const decoration = EFFECT_DECORATIONS[effect.damage_type || 'force'];
-    console.log(`✨ Wild Magic: ${decoration.color('Active')} ${decoration.icon}`);
+    console.log(`✨ Wild Magic: Active`);
   } else {
     console.log('✨ Wild Magic: None');
   }
   
   console.log('');
-  
   const choices = [
     { 
       name: `⚔️  Attack${attacksRemaining > 0 ? ` (${attacksRemaining} left)` : ' (NONE LEFT)'}`, 

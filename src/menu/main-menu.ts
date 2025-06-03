@@ -6,6 +6,7 @@ import { rollDamageInteractive } from '../rolls/damage';
 import { rollAttackInteractive } from '../rolls/attack';
 import { startTurnSequence } from '../turns/turn-manager';
 import { nextTurn as advanceTurn, displayTurnAdvancement } from '../turns/turn-tracker';
+import { resetCombat } from '../features/combat-reset';
 import { toggleHeroicInspiration as toggleHeroic, getHeroicInspirationStatus } from '../features/heroic-inspiration';
 import { showTurnHistory, getTurnHistoryCount } from '../turns/turn-history';
 
@@ -40,6 +41,10 @@ export async function showMainMenu(config: Config): Promise<void> {
           
         case 'heroic':
           await toggleHeroicInspiration(config);
+          break;
+        
+        case 'reset_combat':
+          await resetCombat(config);
           break;
           
         case 'exit':
@@ -78,6 +83,7 @@ async function displayMenu(config: Config): Promise<string> {
         { name: '📜 View Combat History', value: 'history' },
         { name: '🔄 Next Turn', value: 'next_turn' },
         { name: '✨ Toggle Heroic Inspiration', value: 'heroic' },
+        { name: '🔃 Reset Combat', value: 'reset_combat' },
         { name: '🚪 Exit', value: 'exit' }
       ]
     }

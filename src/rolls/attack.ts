@@ -20,8 +20,16 @@ interface AttackRollResult {
   breakdown: string;
   explanation: string;
 }
-
 export async function rollAttackInteractive(config: Config, autoDamage: boolean = true): Promise<void> {
+  await rollAttackInteractiveWithCallback(config, autoDamage);
+}
+
+export async function rollAttackInteractiveWithCallback(
+  config: Config, 
+  autoDamage: boolean = true,
+  onCritCallback?: (isCrit: boolean) => void
+): Promise<boolean> {
+  
   console.clear();
   console.log(chalk.yellow.bold(`⚔️ ${config.character.name} - Attack Roll\n`));
   
@@ -50,8 +58,15 @@ export async function rollAttackInteractive(config: Config, autoDamage: boolean 
   const result = await performAttackRoll(config, attackType, attackModifier);
   await displayAttackResult(config, result);
   
+  // Notify callback if critical hit occurred
+  if (onCritCallback && result.isCritical) {
+    onCritCallback(true);
+  }
+  
   // Ask if attack hit for ALL attack types
   await handleAttackOutcome(config, result, attackModifier, autoDamage);
+  
+  return result.isCritical;
 }
 async function handleAttackOutcome(config: Config, result: AttackRollResult, modifier: number, autoDamage: boolean): Promise<void> {
   const { didHit } = await inquirer.prompt([
@@ -183,24 +198,24 @@ async function performAttackRoll(config: Config, attackType: 'normal' | 'reckles
   let explanation: string;
   
   if (config.settings.enable_crit_animations) {
-    const rollingAnimation = chalkAnimation.pulse('🎲 Rolling attack... 🎲');
+    const rollingAnimation = chalkAnimation.radar('🎲 Rolling attack... 🎲');
     await sleep(1000);
     rollingAnimation.stop();
   }
   
   if (attackType === 'reckless') {
     // Roll with advantage (2d20, keep higher)
-    const roll1 = rollDie(20);
-    const roll2 = rollDie(20);
+    const roll1 = rollDie(20, false, config); // Pass config for testing
+    const roll2 = rollDie(20, false, config);
     d20Roll = Math.max(roll1, roll2);
     explanation = `d20(${roll1}, ${roll2}) + ${modifier} [Advantage]`;
   } else if (attackType === 'brutal') {
     // Normal roll (foregoing advantage)
-    d20Roll = rollDie(20);
+    d20Roll = rollDie(20, false, config); // Pass config for testing
     explanation = `d20(${d20Roll}) + ${modifier} [Brutal Strike - no advantage]`;
   } else {
     // Normal attack
-    d20Roll = rollDie(20);
+    d20Roll = rollDie(20, false, config); // Pass config for testing
     explanation = `d20(${d20Roll}) + ${modifier}`;
   }
   
