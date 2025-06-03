@@ -4,7 +4,7 @@ A comprehensive CLI combat system for D&D 2024, featuring turn management, attac
 
 ## ⚔️ See It In Action
 
-![Combat Demo](./assets/damage-calc.gif)
+![Combat Demo](./assets/epic-combat.gif)
 
 *Epic combat sequences with animated ASCII art, turn management, and comprehensive logging!*
 
