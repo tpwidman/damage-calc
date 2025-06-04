@@ -1,0 +1,7 @@
+{
+  "enable_crit_animations": false,
+  "testing_mode": {
+    "always_crit": false,
+    "force_heroic_inspiration": false
+  }
+}

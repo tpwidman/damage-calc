@@ -1,70 +1,52 @@
 {
-  "character": {
-    "name": "Dumnorix",
-    "level": 10,
-    "class": "barbarian",
-    "subclass": "wild_magic",
-    "weapon": {
-      "die": 10,
-      "name": "pike"
+  "name": "Dumnorix",
+  "classes": [
+    {
+      "name": "barbarian",
+      "level": 10,
+      "subclass": "wild_magic"
+    }
+  ],
+  "primaryClass": "barbarian",
+  "weapon": {
+    "die": 10,
+    "name": "pike"
+  },
+  "base_stats": {
+    "strength_modifier": 4,
+    "constitution_modifier": 3
+  },
+  "attack_modifiers": {
+    "strength": 4,
+    "proficiency": 4,
+    "magic_weapon": 1
+  },
+  "damage_bonuses": {
+    "strength": 4,
+    "heavy_weapon_mastery": 4,
+    "magic_weapon": 1
+  },
+  "features": {
+    "brutal_strike": {
+      "available": true,
+      "once_per_turn": true
     },
-    "base_stats": {
-      "strength_modifier": 4,
-      "constitution_modifier": 3
+    "gwm": {
+      "enabled": true
     },
-    "attack_modifiers": {
-      "strength": 4,
-      "proficiency": 4,
-      "magic_weapon": 1
+    "savage_attacks": {
+      "available":true,
+      "once_per_turn": true
     },
-    "damage_bonuses": {
-      "strength": 4,
-      "heavy_weapon_mastery": 4,
-      "magic_weapon": 1
+    "great_weapon_fighting": {
+      "enabled": true
     },
-    "features": {
-      "brutal_strike": {
-        "available": true,
-        "once_per_turn": true
-      },
-      "gwm": {
-        "enabled": true
-      },
-      "savage_attacks": {
-        "enabled": true
-      },
-      "great_weapon_fighting": {
-        "enabled": true
-      },
-      "reckless_attack": {
-        "enabled": true
-      }
-    },
-    "additional_damage_dice": {},
-    "magic_items": {
-      "weapon_bonus": 1
+    "reckless_attack": {
+      "enabled": true
     }
   },
-  "session": {
-    "heroic_inspiration": false,
-    "current_turn": 11,
-    "rage_active": true,
-    "rages_remaining": 0,
-    "current_wild_magic": {
-      "roll": 2,
-      "description": "You teleport up to 30 feet. Until rage ends, you can use this as a bonus action each turn.",
-      "effect_type": "utility",
-      "duration": "rage",
-      "bonus_action_repeatable": true,
-      "damage_type": "teleport"
-    },
-    "temp_effects": []
-  },
-  "settings": {
-    "enable_crit_animations": true,
-    "testing_mode": {
-      "always_crit": true,
-      "force_heroic_inspiration": false
-    }
+  "additional_damage_dice": {},
+  "magic_items": {
+    "weapon_bonus": 1
   }
 }

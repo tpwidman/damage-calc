@@ -9,6 +9,12 @@ export interface Feature {
   enabled?: boolean;
 }
 
+export interface CharacterClass {
+  name: string;           // e.g., 'barbarian', 'fighter'
+  level: number;          // levels in this specific class
+  subclass?: string;      // optional, e.g., 'wild_magic', 'champion'
+}
+
 export interface WildMagicEffect {
   roll: number;
   description: string;
@@ -20,11 +26,10 @@ export interface WildMagicEffect {
   damage_type?: string;
 }
 
-export interface Character {
+export interface CharacterData {
   name: string;
-  level: number;
-  class: string;
-  subclass: string;
+  classes: CharacterClass[];        // Array of classes with levels
+  primaryClass: string;             // Main class for display/primary features
   weapon: Weapon;
   base_stats: {
     strength_modifier: number;
@@ -36,11 +41,20 @@ export interface Character {
     magic_weapon: number;
   };
   features: {
-    brutal_strike: Feature;
-    gwm: Feature;
-    savage_attacks: Feature;
-    great_weapon_fighting: Feature;
-    reckless_attack: Feature;
+    // Barbarian features
+    brutal_strike?: Feature;
+    rage?: Feature;
+    savage_attacks?: Feature;
+    great_weapon_fighting?: Feature;
+    reckless_attack?: Feature;
+    
+    // Fighter features
+    action_surge?: Feature;
+    second_wind?: Feature;
+    fighting_style?: Feature;
+    
+    // Universal features/feats
+    gwm?: Feature;
   };
   damage_bonuses: Record<string, number>;
   additional_damage_dice: Record<string, { die: number; description: string }>;
@@ -75,7 +89,7 @@ export interface Settings {
 }
 
 export interface Config {
-  character: Character;
+  character: CharacterData;  // Raw data
   session: Session;
   settings: Settings;
 }
@@ -117,12 +131,4 @@ export interface DieRoll {
   value: number;
   die: number;
   source: string;
-}
-
-export interface LevelProgression {
-  level: number;
-  proficiency_bonus: number;
-  rages: number;
-  rage_damage: number;
-  features: string[];
-}
+};

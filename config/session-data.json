@@ -1,0 +1,16 @@
+{
+  "heroic_inspiration": false,
+  "current_turn": 5,
+  "rage_active": true,
+  "rages_remaining": 3,
+  "current_wild_magic": {
+    "roll": 1,
+    "description": "Each creature of your choice within 30 feet must make a Constitution save or take 1d12 necrotic damage. You gain 1d12 temporary hit points.",
+    "effect_type": "offensive",
+    "duration": "instant",
+    "requires_save": true,
+    "save_type": "Constitution",
+    "damage_type": "necrotic"
+  },
+  "temp_effects": []
+}
